@@ -39,3 +39,5 @@ grp_df = tmp_df.groupby(["simple_zone", "shot_made"]).count().reset_index()[["si
 
 fig = plot_shot_chart(shots_df, 'PHI', "All", "pps_abs", title="Shot chart")
 fig.show()
+
+

@@ -85,9 +85,18 @@ def flip_x_coords(log_df):
 
 def filter_error_rows(log_df, filt_cols=('original_x', 'original_y', 'shot_distance')):
 
+    logger.info(f"Filtering {len(log_df)} rows")
+    log_df = log_df[(log_df["original_y"].notna()) & (log_df["original_x"].notna()) & (log_df["shot_distance"].notna())]
+    logger.info(f"{len(log_df)} rows remaining after filtering NA values")
+
     for filt_col in filt_cols:
-        log_df = log_df[log_df[filt_col].apply(lambda x: not isinstance(x, str))]
-        log_df = log_df[log_df[filt_col].notna()]
+        logger.info(f"Processing {filt_col}")
+
+        log_df[filt_col] = log_df[filt_col].astype(str)
+        log_df = log_df[-log_df[filt_col].str.contains(r"[^0-9./-]", regex=True)]
+        log_df[filt_col] = log_df[filt_col].astype(float)
+
+        logger.info(f"{len(log_df)} rows remaining after filtering string values with {filt_col}")
 
     return log_df
 
@@ -257,14 +266,13 @@ def load_latest_logfile(logfile_dir):
     return loaded_df
 
 
-def build_shots_df(logfile_dir='srcdata/2019-2020_NBA_PbP_Logs', outfile='procdata/shots_df.csv', sm_df=False, overwrite=True):
+def build_shots_df(logs_df, outfile='procdata/shots_df.csv', sm_df=False, overwrite=True):
 
     import os
     import sys
 
     logger.info("Building a DataFrame of all shots")
 
-    logs_df = load_latest_logfile(logfile_dir)
     shots_df = process_shots_df(logs_df)
     shots_df.reset_index(inplace=True, drop=True)
 
@@ -375,14 +383,12 @@ def get_pl_data_dict(time_df, player, team, pl_acc_dict, pl_pps_dict, min_start,
     return temp_dict
 
 
-def build_shot_dist_df(shots_df_loc="procdata/shots_df.csv", outfile='procdata/shot_dist_df.csv', overwrite=True):
+def build_shot_dist_df(shots_df, outfile='procdata/shot_dist_df.csv', overwrite=True):
 
     import os
     import sys
 
     logger.info("Building a DataFrame of shot distributions")
-
-    shots_df = load_shots_df(shots_df_loc)
 
     # ========== PROCESS DATA FILE ==========
     shots_df.reset_index(inplace=True, drop=True)

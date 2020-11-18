@@ -184,7 +184,7 @@ def draw_plotly_court(fig, fig_width=600, margins=10):
     return True
 
 
-def get_hexbin_stats(shots_df, gridsize=None, min_samples=None, min_freqs=2):
+def get_hexbin_stats(shots_df, gridsize=None, min_samples=None, min_freqs=3):
 
     import matplotlib
     import numpy as np
@@ -418,7 +418,7 @@ def get_threes_mask(gridsize=51):
 def plot_shot_hexbins_plotly(
         xlocs, ylocs, freq_by_hex, accs_by_hex,
         marker_cmin=None, marker_cmax=None, colorscale='RdYlBu_r',
-        title_txt='', legend_title='Accuracy', fig_width=500,
+        title_txt='', legend_title='Accuracy', fig_width=800,
         hexbin_text=[], ticktexts=[], logo_url=None, show_fig=False, img_out=None):
     """
     Plot shot chart as hexbins
@@ -453,56 +453,65 @@ def plot_shot_hexbins_plotly(
         x=xlocs, y=ylocs, mode='markers', name='markers',
         text=hexbin_text,
         marker=dict(
-            size=freq_by_hex, sizemode='area', sizeref=2. * max(freq_by_hex) / (10. ** 2), sizemin=2.5,
+            size=freq_by_hex, sizemode='area', sizeref=2. * max(freq_by_hex) / (18. ** 2), sizemin=2.5,
             color=accs_by_hex, colorscale=colorscale,
             colorbar=dict(
-                thickness=15,
+                # thickness=15,
                 x=0.84,
                 y=0.82,
+                thickness=20,
                 yanchor='middle',
                 len=0.3,
                 title=dict(
-                    text="<B>" + legend_title + "</B>",
+                    text=legend_title,
                     font=dict(
-                        size=10,
-                        color='#4d4d4d'
+                        size=14,
+                        color='#3f3f3f'
                     ),
                 ),
                 tickvals=[marker_cmin, (marker_cmin + marker_cmax) / 2, marker_cmax],
                 ticktext=ticktexts,
                 tickfont=dict(
-                    size=10,
-                    color='#4d4d4d'
+                    size=14,
+                    color='#3f3f3f'
                 )
             ),
             cmin=marker_cmin, cmax=marker_cmax,
-            line=dict(width=1, color='#333333'), symbol='hexagon',
+            line=dict(width=0.6, color='#222222'), symbol='hexagon',
         ),
         hoverinfo='text'
     ))
 
-    if logo_url is not None:
-        title_xloc = 0.19
-    else:
-        title_xloc = 0.1
+    if show_fig:
+        fig.show(
+            config={
+                'displayModeBar': False
+            }
+        )
+    if img_out is not None:
+        fig.write_image(img_out)
 
+    return fig
+
+
+def add_shotchart_note(fig, title_txt, title_xloc, title_yloc=0.9, size=12):
     fig.update_layout(
         title=dict(
             text=title_txt,
-            y=0.9,
+            y=title_yloc,
             x=title_xloc,
             xanchor='left',
             yanchor='middle',
-            font = dict(
-                family="Arial, Tahoma, Helvetica",
-                size=11,
-                color="#7f7f7f"
+            font=dict(
+                # family="Helvetica, Arial, Tahoma",
+                size=size,
+                color="#3f3f3f"
             ),
         ),
         font=dict(
             family="Arial, Tahoma, Helvetica",
-            size=10,
-            color="#7f7f7f"
+            size=14,
+            color="#3f3f3f"
         ),
         annotations=[
             go.layout.Annotation(
@@ -515,23 +524,6 @@ def plot_shot_hexbins_plotly(
             ),
         ],
     )
-    if logo_url is not None:
-        fig.add_layout_image(
-            go.layout.Image(
-                source=logo_url,
-                xref="x", yref="y", x=-230, y=405, sizex=50, sizey=50,
-                xanchor="left", yanchor="top",
-                sizing="stretch", opacity=1, layer="above"))
-
-    if show_fig:
-        fig.show(
-            config={
-                'displayModeBar': False
-            }
-        )
-    if img_out is not None:
-        fig.write_image(img_out)
-
     return fig
 
 
@@ -571,45 +563,45 @@ def plot_parcat_chart(input_df, title_txt='Shot flow - 2018/2019 NBA Season (col
                                      labelfont={'size': 13, 'family': "Arial, Tahoma, Helvetica"},
                                      tickfont={'size': 11, 'family': "Arial, Tahoma, Helvetica"}
                                      )])
-    fig.update_layout(
-        width=900,
-        height=700,
-        margin=dict(t=50),
-        title=dict(
-            text=title_txt,
-            y=0.95,
-            x=0.5,
-            xanchor='center',
-            yanchor='middle'),
-        font=dict(
-            family="Arial, Tahoma, Helvetica",
-            size=11,
-            color="#3f3f3f",
-        ),
-        coloraxis=dict(showscale=False),
-        annotations=[
-            go.layout.Annotation(
-                x=0.5,
-                y=0.0,
-                showarrow=False,
-                xanchor='center',
-                yanchor='middle',
-                text="Twitter: @_jphwang",
-                xref="paper",
-                yref="paper"
-            ),
-            go.layout.Annotation(
-                x=0.5,
-                y=0.99,
-                showarrow=False,
-                xanchor='center',
-                yanchor='middle',
-                text="<B>Left:</B> Shooter, <B>Middle:</B> Shot zone, <B>Right:</B> Assist",
-                xref="paper",
-                yref="paper"
-            ),
-        ],
-    )
+    # fig.update_layout(
+    #     width=900,
+    #     height=700,
+    #     margin=dict(t=50),
+    #     title=dict(
+    #         text=title_txt,
+    #         y=0.95,
+    #         x=0.5,
+    #         xanchor='center',
+    #         yanchor='middle'),
+    #     font=dict(
+    #         family="Arial, Tahoma, Helvetica",
+    #         size=11,
+    #         color="#3f3f3f",
+    #     ),
+    #     coloraxis=dict(showscale=False),
+    #     annotations=[
+    #         go.layout.Annotation(
+    #             x=0.5,
+    #             y=0.0,
+    #             showarrow=False,
+    #             xanchor='center',
+    #             yanchor='middle',
+    #             text="Twitter: @_jphwang",
+    #             xref="paper",
+    #             yref="paper"
+    #         ),
+    #         go.layout.Annotation(
+    #             x=0.5,
+    #             y=0.99,
+    #             showarrow=False,
+    #             xanchor='center',
+    #             yanchor='middle',
+    #             text="<B>Left:</B> Shooter, <B>Middle:</B> Shot zone, <B>Right:</B> Assist",
+    #             xref="paper",
+    #             yref="paper"
+    #         ),
+    #     ],
+    # )
     return fig
 
 
@@ -768,9 +760,10 @@ def plot_shot_chart(shots_df, teamname, period, stat_type,
 
         accs_by_hex = hexbin_stats['shot_ev_by_hex']
         colorscale = 'RdYlBu_r'
-        marker_cmin = 0.85  # 1.048 -> leage avg
+        # colorscale = 'Portland'
+        marker_cmin = 0.75  # 1.048 -> leage avg
         marker_cmax = 1.25
-        legend_title = 'Pts/100<BR>shots'
+        legend_title = 'PTS/100'
         title_suffix += '<BR>Expected points per 100 shots'
 
         freq_by_hex = np.array([min(max_freq, i) for i in hexbin_stats['freq_by_hex']])
