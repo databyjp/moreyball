@@ -13,9 +13,8 @@ root_logger.addHandler(sh)
 
 
 import pandas as pd
-import numpy as np
+import plotly.graph_objects as go
 import viz
-import plotly.express as px
 
 desired_width = 320
 pd.set_option('display.max_columns', 20)
@@ -23,51 +22,127 @@ pd.set_option('display.width', desired_width)
 
 yrs = list(range(5, 20))
 
-yr = yrs[0]
+yr = yrs[-1]
 
 yr_a = ("0" + str(yr))[-2:]
 yr_b = ("0" + str(yr+1))[-2:]
-shots_df = pd.read_csv(f'procdata/shots_df_{yr_a}_{yr_b}.csv', index_col=0)
+allshots_df = pd.read_csv(f'procdata/shots_df_{yr_a}_{yr_b}.csv', index_col=0)
 
+fig_width = 800
+textcolor = "#ffffff"
+textcolor = "#333333"
 
+# # ========== PLOT ALL MADE SHOTS / ALL MISSED SHOTS SEPARATELY ==========
+# shots_df = allshots_df
+#
+# for make_miss in [0, 1]:
+#
+#     fig = go.Figure()
+#     viz.draw_plotly_court(fig, fig_width=fig_width, mode="light")
+#     if make_miss == 0:
+#         symbol = "x"
+#         marker_color = "red"
+#         annotation = "NBA" + ": '" + yr_a + "/'" + yr_b + " season<BR><BR>Missed shots"
+#     else:
+#         symbol = "circle"
+#         marker_color = "blue"
+#         annotation = "NBA" + ": '" + yr_a + "/'" + yr_b + " season<BR><BR>Made shots"
+#
+#     xlocs = shots_df[shots_df["shot_made"] == make_miss]["original_x"]
+#     ylocs = shots_df[shots_df["shot_made"] == make_miss]["original_y"]
+#
+#     fig.add_trace(go.Scatter(
+#         x=xlocs, y=ylocs, mode='markers', name='markers',
+#         marker=dict(
+#             size=2,
+#             line=dict(width=0.6, color=textcolor), symbol=symbol,
+#             color=marker_color,
+#         ),
+#         hoverinfo='text'
+#     ))
+#     fig.update_layout(showlegend=False)
+#     fig = viz.add_shotchart_note(fig,
+#                                  annotation,
+#                                  title_xloc=0.1, title_yloc=0.885,
+#                                  size=14, textcolor="#222222")
+#     fig.show(config={'displayModeBar': False})
+#     fig.write_image(f"temp/NBA_{yr_a}_{yr_b}_raw_shot_{make_miss}.png")
+#
+# # ==================================================
 
+# ========== PLOT ALL NBA SHOTS ==========
+shots_df = allshots_df
+fig = go.Figure()
+viz.draw_plotly_court(fig, fig_width=fig_width, mode="light")
 
-import plotly.express as px
-fig = px.scatter(shots_df, x="original_x", y="original_y", color="shot_made", facet_col="halfcourt_conv")
-fig.show()
+for make_miss in [0, 1]:
 
+    if make_miss == 0:
+        symbol = "x"
+        marker_color = "red"
+    else:
+        symbol = "circle"
+        marker_color = "blue"
 
-"""
+    xlocs = shots_df[shots_df["shot_made"] == make_miss]["original_x"]
+    ylocs = shots_df[shots_df["shot_made"] == make_miss]["original_y"]
+
     fig.add_trace(go.Scatter(
         x=xlocs, y=ylocs, mode='markers', name='markers',
-        text=hexbin_text,
         marker=dict(
-            size=freq_by_hex, sizemode='area', sizeref=2. * max(freq_by_hex) / (18. ** 2), sizemin=1.5,
-            color=accs_by_hex, colorscale=colorscale,
-            colorbar=dict(
-                # thickness=15,
-                x=0.88,
-                y=0.83,
-                thickness=20,
-                yanchor='middle',
-                len=0.3,
-                title=dict(
-                    text=legend_title,
-                    font=dict(
-                        size=14,
-                        color=textcolor
-                    ),
-                ),
-                tickvals=[marker_cmin, (marker_cmin + marker_cmax) / 2, marker_cmax],
-                ticktext=ticktexts,
-                tickfont=dict(
-                    size=14,
-                    color=textcolor
-                )
-            ),
-            cmin=marker_cmin, cmax=marker_cmax,
-            line=dict(width=0.6, color=textcolor), symbol='hexagon',
+            size=2,
+            line=dict(width=0.6, color=textcolor), symbol=symbol,
+            color=marker_color,
         ),
         hoverinfo='text'
     ))
-"""
+fig.update_layout(showlegend=False)
+annotation = "NBA" + ": '" + yr_a + "/'" + yr_b + " season<BR><BR>All shots"
+fig = viz.add_shotchart_note(fig,
+                             annotation,
+                             title_xloc=0.1, title_yloc=0.885,
+                             size=14, textcolor="#222222")
+fig.show(config={'displayModeBar': False})
+fig.write_image(f"temp/NBA_{yr_a}_{yr_b}_raw_shot.png")
+
+# ==================================================
+
+# ========== PLOT PLAYERS' SHOTS ==========
+players = ["LeBron James", "Luka Doncic", "Kevin Durant", "Joel Embiid", "James Harden",
+           "DeMar DeRozan", "Ben Simmons", "Chris Paul", "Nikola Jokic", "Rudy Gobert", "Damian Lillard"]
+
+for player in players:
+    shots_df = allshots_df[allshots_df["player"] == player]
+
+    fig = go.Figure()
+    viz.draw_plotly_court(fig, fig_width=fig_width, mode="light")
+
+    for make_miss in [0, 1]:
+
+        if make_miss == 0:
+            symbol = "x"
+            marker_color = "red"
+        else:
+            symbol = "circle"
+            marker_color = "blue"
+
+        xlocs = shots_df[shots_df["shot_made"] == make_miss]["original_x"]
+        ylocs = shots_df[shots_df["shot_made"] == make_miss]["original_y"]
+
+        fig.add_trace(go.Scatter(
+            x=xlocs, y=ylocs, mode='markers', name='markers',
+            marker=dict(
+                size=8,
+                line=dict(width=0.6, color=textcolor), symbol=symbol,
+                color=marker_color,
+            ),
+            hoverinfo='text'
+        ))
+    fig.update_layout(showlegend=False)
+    fig = viz.add_shotchart_note(fig,
+                                 player +
+                                 ": '" + yr_a + "/'" + yr_b + " season<BR><BR>",
+                                 title_xloc=0.1, title_yloc=0.885,
+                                 size=14, textcolor="#222222")
+    fig.show(config={'displayModeBar': False})
+    fig.write_image(f"temp/{player}_{yr_a}_{yr_b}_raw.png")

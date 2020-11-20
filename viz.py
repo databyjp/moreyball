@@ -57,6 +57,8 @@ def draw_plotly_court(fig, fig_width=600, margins=10, mode="dark"):
         main_line_col = "#333333"
         paper_bgcolor = "white"
         plot_bgcolor = "white"
+        paper_bgcolor = "wheat"
+        plot_bgcolor = "Cornsilk"
 
     fig.update_layout(
         # Line Horizontal
@@ -91,19 +93,19 @@ def draw_plotly_court(fig, fig_width=600, margins=10, mode="dark"):
             dict(
                 type="rect", x0=-80, y0=-52.5, x1=80, y1=137.5,
                 line=dict(color=main_line_col, width=1),
-                # fillcolor='#333333',
+                fillcolor="NavajoWhite" if mode != "dark" else None,
                 layer='below'
             ),
             dict(
                 type="rect", x0=-60, y0=-52.5, x1=60, y1=137.5,
                 line=dict(color=main_line_col, width=1),
-                # fillcolor='#333333',
+                fillcolor="BlanchedAlmond" if mode != "dark" else None,
                 layer='below'
             ),
             dict(
                 type="circle", x0=-60, y0=77.5, x1=60, y1=197.5, xref="x", yref="y",
                 line=dict(color=main_line_col, width=1),
-                # fillcolor='#dddddd',
+                fillcolor="BlanchedAlmond" if mode != "dark" else None,
                 layer='below'
             ),
             dict(
@@ -210,20 +212,17 @@ def get_hexbin_stats(shots_df, gridsize=None, min_samples=None, min_freqs=1):
 
     fig, axs = plt.subplots(ncols=2)
     shots_hex = axs[0].hexbin(
-        # shots_df.original_x, shots_df.original_y,
-        shots_df.halfcourt_x, shots_df.halfcourt_y,
+        shots_df.original_x, shots_df.original_y,
         extent=(-250, 250, 422.5, -47.5), cmap=plt.cm.Reds, gridsize=gridsize)
 
     makes_df = shots_df[shots_df.shot_made == 1]
     makes_hex = axs[0].hexbin(
-        # makes_df.original_x, makes_df.original_y,
-        makes_df.halfcourt_x, makes_df.halfcourt_y,
+        makes_df.original_x, makes_df.original_y,
         extent=(-250, 250, 422.5, -47.5), cmap=plt.cm.Reds, gridsize=gridsize)
 
     assists_df = shots_df[shots_df.assist.notna()]
     assists_hex = axs[0].hexbin(
-        # assists_df.original_x, assists_df.original_y,
-        assists_df.halfcourt_x, assists_df.halfcourt_y,
+        assists_df.original_x, assists_df.original_y,
         extent=(-250, 250, 422.5, -47.5), cmap=plt.cm.Reds, gridsize=gridsize)
     # plt.close()
 
@@ -513,9 +512,9 @@ def plot_shot_hexbins_plotly(
     return fig
 
 
-def add_shotchart_note(fig, title_txt, title_xloc, title_yloc=0.9, size=12):
+def add_shotchart_note(fig, title_txt, title_xloc, title_yloc=0.9, size=12, textcolor="#eeeeee"):
 
-    textcolor = "#eeeeee"
+    # textcolor = "#eeeeee"
 
     fig.update_layout(
         title=dict(
