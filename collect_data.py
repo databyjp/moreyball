@@ -23,6 +23,7 @@ yrs = list(range(5, 20))
 
 stats_list = list()
 grp_df_list = list()
+grp_make_df_list = list()
 
 for yr in yrs[:]:
 
@@ -43,17 +44,18 @@ for yr in yrs[:]:
     shot_acc_three = sum(threes_df["shot_made"]) / len(threes_df["shot_made"])
     shot_acc_two = sum(twos_df["shot_made"]) / len(twos_df["shot_made"])
 
-    grp_df = shots_df[shots_df.shot_made == 1].groupby("simple_zone").count()["game_id"].reset_index()
-    grp_df = grp_df.assign(pts=0)
+    grp_df = shots_df.groupby("simple_zone").count()["game_id"].reset_index()
+    # grp_df = grp_df.assign(pts=0)
 
-    for i, row in grp_df.iterrows():
-        if i <= 2:
-            grp_df.loc[i, "pts"] = row["game_id"] * 2
-        else:
-            grp_df.loc[i, "pts"] = row["game_id"] * 3
-    grp_df = grp_df.assign(pts_pct=grp_df.pts/grp_df.pts.sum())
-    grp_df = grp_df.assign(season="'" + yr_a + "-'" + yr_b)
-    grp_df_list.append(grp_df)
+    grp_make_df = shots_df[shots_df.shot_made == 1].groupby("simple_zone").count()["game_id"].reset_index()
+    # grp_make_df = grp_make_df.assign(pts=0)
+
+    # for i, row in grp_make_df.iterrows():
+    #     if i <= 2:
+    #         grp_make_df.loc[i, "pts"] = row["game_id"] * 2
+    #     else:
+    #         grp_make_df.loc[i, "pts"] = row["game_id"] * 3
+    # grp_make_df = grp_make_df.assign(pts_pct=grp_make_df.pts/grp_make_df.pts.sum())
 
     data_dict = {"Season": "'" + yr_a + "-'" + yr_b,
                  "Threes Freq": three_freq,
@@ -67,11 +69,23 @@ for yr in yrs[:]:
                  "Two acc": shot_acc_two,
                  "Three acc": shot_acc_three
                  }
+
+    grp_df = grp_df.assign(season="'" + yr_a + "-'" + yr_b)
+    grp_df_list.append(grp_df)
+
+    grp_make_df = grp_make_df.assign(season="'" + yr_a + "-'" + yr_b)
+    grp_make_df_list.append(grp_make_df)
+
     stats_list.append(data_dict)
 
+tot_grp_make_df = pd.concat(grp_make_df_list)
 tot_grp_df = pd.concat(grp_df_list)
-tot_grp_df = tot_grp_df[["simple_zone", "pts_pct", "season"]].pivot(columns=['simple_zone'], index=["season"]).reset_index()
-tot_grp_df.to_csv("temp/grp_df.csv")
+
+tot_grp_df = tot_grp_df.assign(acc=tot_grp_make_df.game_id/tot_grp_df.game_id)
+
+
+tot_grp_df = tot_grp_df[["simple_zone", "acc", "season"]].pivot(columns=['simple_zone'], index=["season"]).reset_index()
+tot_grp_df.to_csv("temp/acc_grp_df.csv")
 
 df = pd.DataFrame(stats_list)
 df.to_csv("temp/compiled_data.csv")

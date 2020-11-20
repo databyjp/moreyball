@@ -182,6 +182,20 @@ def get_season_yr(log_df):
     return max_yr
 
 
+def to_halfcourt_df(shots_df):
+
+    midpoint = 405.5
+    # Convert full court data to half court data
+    shots_df = shots_df.assign(halfcourt_x=shots_df.original_x)
+    shots_df = shots_df.assign(halfcourt_y=shots_df.original_y)
+    shots_df = shots_df.assign(halfcourt_conv=0)
+    shots_df.loc[shots_df["original_y"] > midpoint, "halfcourt_x"] = -shots_df[shots_df["original_y"] > midpoint]["original_x"]
+    shots_df.loc[shots_df["original_y"] > midpoint, "halfcourt_y"] = midpoint*2 - shots_df[shots_df["original_y"] > midpoint]["original_y"]
+    shots_df.loc[shots_df["original_y"] > midpoint, "halfcourt_conv"] = 1
+
+    return shots_df
+
+
 def process_shots_df(log_df):
 
     import pandas as pd
@@ -268,6 +282,8 @@ def load_latest_logfile(logfile_dir):
 
 def build_shots_df(logs_df, outfile='procdata/shots_df.csv', sm_df=False, overwrite=True):
 
+    # Convert full court to half court => y=89 == y=5
+    # If y > 47: flip x, y = y-52
     import os
     import sys
 

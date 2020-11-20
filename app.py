@@ -239,9 +239,9 @@ def call_shotchart_1(teamname, period, stat_type, start_date, end_date, player, 
         off_court_a = None
     else:
         off_court_a = [off_court_a]
-    fig = viz.plot_shot_chart(shots_df, teamname, period, stat_type, start_date, end_date,
-                              player, on_court_list=on_court_a, off_court_list=off_court_a,
-                              title="Shot chart, " + seasonyr_str)
+    fig = viz.plot_hex_shot_chart(shots_df, teamname, period, stat_type, start_date, end_date,
+                                  player, on_court_list=on_court_a, off_court_list=off_court_a,
+                                  title="Shot chart, " + seasonyr_str)
 
     return fig
 
@@ -253,7 +253,7 @@ def call_shotchart_1(teamname, period, stat_type, start_date, end_date, player, 
 )
 def call_shotchart_2(teamname, period, stat_type, start_date, end_date):
 
-    fig = viz.plot_shot_chart(shots_df, teamname, period, stat_type, start_date, end_date, title="Shot chart, " + seasonyr_str)
+    fig = viz.plot_hex_shot_chart(shots_df, teamname, period, stat_type, start_date, end_date, title="Shot chart, " + seasonyr_str)
 
     return fig
 

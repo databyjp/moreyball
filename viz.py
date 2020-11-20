@@ -22,7 +22,9 @@ def fill_def_params(gridsize=None, min_samples=None):
     return gridsize, min_samples
 
 
-def draw_plotly_court(fig, fig_width=600, margins=10):
+def draw_plotly_court(fig, fig_width=600, margins=10, mode="dark"):
+
+    # mode should be "dark" or "light"
 
     # From: https://community.plot.ly/t/arc-shape-with-path/7205/5
     def ellipse_arc(x_center=0.0, y_center=0.0, a=10.5, b=10.5, start_angle=0.0, end_angle=2 * np.pi, N=200, closed=False):
@@ -44,14 +46,23 @@ def draw_plotly_court(fig, fig_width=600, margins=10):
     fig.update_yaxes(range=[-52.5 - margins, 417.5 + margins])
 
     threept_break_y = 89.47765084
-    three_line_col = "#777777"
-    main_line_col = "#777777"
+
+    if mode == "dark":
+        three_line_col = "#ffffff"
+        main_line_col = "#dddddd"
+        paper_bgcolor = "DimGray"
+        plot_bgcolor = "black"
+    else:
+        three_line_col = "#333333"
+        main_line_col = "#333333"
+        paper_bgcolor = "white"
+        plot_bgcolor = "white"
 
     fig.update_layout(
         # Line Horizontal
         margin=dict(l=20, r=20, t=20, b=20),
-        paper_bgcolor="white",
-        plot_bgcolor="white",
+        paper_bgcolor=paper_bgcolor,
+        plot_bgcolor=plot_bgcolor,
         yaxis=dict(
             scaleanchor="x",
             scaleratio=1,
@@ -103,16 +114,16 @@ def draw_plotly_court(fig, fig_width=600, margins=10):
 
             dict(
                 type="rect", x0=-2, y0=-7.25, x1=2, y1=-12.5,
-                line=dict(color="#ec7607", width=1),
-                fillcolor='#ec7607',
+                line=dict(color=main_line_col, width=1),
+                fillcolor=main_line_col,
             ),
             dict(
                 type="circle", x0=-7.5, y0=-7.5, x1=7.5, y1=7.5, xref="x", yref="y",
-                line=dict(color="#ec7607", width=1),
+                line=dict(color=main_line_col, width=1),
             ),
             dict(
                 type="line", x0=-30, y0=-12.5, x1=30, y1=-12.5,
-                line=dict(color="#ec7607", width=1),
+                line=dict(color=main_line_col, width=1),
             ),
 
             dict(type="path",
@@ -181,36 +192,38 @@ def draw_plotly_court(fig, fig_width=600, margins=10):
 
         ]
     )
-    return True
+    return fig
 
 
-def get_hexbin_stats(shots_df, gridsize=None, min_samples=None, min_freqs=3):
+def get_hexbin_stats(shots_df, gridsize=None, min_samples=None, min_freqs=1):
 
     import matplotlib
+    import matplotlib.pyplot as plt
     import numpy as np
+    from dataproc import get_zones
+
     matplotlib.use('Agg')
 
     # TODO - scaling of the hex sizes needs to change for individual players
     # Get parameters
     gridsize, min_samples = fill_def_params(gridsize, min_samples)
 
-    import matplotlib.pyplot as plt
-    import numpy as np
-    from dataproc import get_zones
-
     fig, axs = plt.subplots(ncols=2)
     shots_hex = axs[0].hexbin(
-        shots_df.original_x, shots_df.original_y,
+        # shots_df.original_x, shots_df.original_y,
+        shots_df.halfcourt_x, shots_df.halfcourt_y,
         extent=(-250, 250, 422.5, -47.5), cmap=plt.cm.Reds, gridsize=gridsize)
 
     makes_df = shots_df[shots_df.shot_made == 1]
     makes_hex = axs[0].hexbin(
-        makes_df.original_x, makes_df.original_y,
+        # makes_df.original_x, makes_df.original_y,
+        makes_df.halfcourt_x, makes_df.halfcourt_y,
         extent=(-250, 250, 422.5, -47.5), cmap=plt.cm.Reds, gridsize=gridsize)
 
     assists_df = shots_df[shots_df.assist.notna()]
     assists_hex = axs[0].hexbin(
-        assists_df.original_x, assists_df.original_y,
+        # assists_df.original_x, assists_df.original_y,
+        assists_df.halfcourt_x, assists_df.halfcourt_y,
         extent=(-250, 250, 422.5, -47.5), cmap=plt.cm.Reds, gridsize=gridsize)
     # plt.close()
 
@@ -419,7 +432,8 @@ def plot_shot_hexbins_plotly(
         xlocs, ylocs, freq_by_hex, accs_by_hex,
         marker_cmin=None, marker_cmax=None, colorscale='RdYlBu_r',
         title_txt='', legend_title='Accuracy', fig_width=800,
-        hexbin_text=[], ticktexts=[], logo_url=None, show_fig=False, img_out=None):
+        hexbin_text=[], ticktexts=[], logo_url=None, show_fig=False, img_out=None,
+        mode="dark"):
     """
     Plot shot chart as hexbins
     :param xlocs: list of x locations
@@ -442,6 +456,11 @@ def plot_shot_hexbins_plotly(
 
     import plotly.graph_objects as go
 
+    if mode == "dark":
+        textcolor = "#eeeeee"
+    else:
+        textcolor = "#222222"
+
     if marker_cmin is None:
         marker_cmin = min(accs_by_hex)
     if marker_cmax is None:
@@ -453,12 +472,12 @@ def plot_shot_hexbins_plotly(
         x=xlocs, y=ylocs, mode='markers', name='markers',
         text=hexbin_text,
         marker=dict(
-            size=freq_by_hex, sizemode='area', sizeref=2. * max(freq_by_hex) / (18. ** 2), sizemin=2.5,
+            size=freq_by_hex, sizemode='area', sizeref=2. * max(freq_by_hex) / (18. ** 2), sizemin=1.5,
             color=accs_by_hex, colorscale=colorscale,
             colorbar=dict(
                 # thickness=15,
-                x=0.84,
-                y=0.82,
+                x=0.88,
+                y=0.83,
                 thickness=20,
                 yanchor='middle',
                 len=0.3,
@@ -466,18 +485,18 @@ def plot_shot_hexbins_plotly(
                     text=legend_title,
                     font=dict(
                         size=14,
-                        color='#3f3f3f'
+                        color=textcolor
                     ),
                 ),
                 tickvals=[marker_cmin, (marker_cmin + marker_cmax) / 2, marker_cmax],
                 ticktext=ticktexts,
                 tickfont=dict(
                     size=14,
-                    color='#3f3f3f'
+                    color=textcolor
                 )
             ),
             cmin=marker_cmin, cmax=marker_cmax,
-            line=dict(width=0.6, color='#222222'), symbol='hexagon',
+            line=dict(width=0.6, color=textcolor), symbol='hexagon',
         ),
         hoverinfo='text'
     ))
@@ -495,6 +514,9 @@ def plot_shot_hexbins_plotly(
 
 
 def add_shotchart_note(fig, title_txt, title_xloc, title_yloc=0.9, size=12):
+
+    textcolor = "#eeeeee"
+
     fig.update_layout(
         title=dict(
             text=title_txt,
@@ -505,13 +527,13 @@ def add_shotchart_note(fig, title_txt, title_xloc, title_yloc=0.9, size=12):
             font=dict(
                 # family="Helvetica, Arial, Tahoma",
                 size=size,
-                color="#3f3f3f"
+                color=textcolor
             ),
         ),
         font=dict(
-            family="Arial, Tahoma, Helvetica",
+            family="Open Sans, Arial",
             size=14,
-            color="#3f3f3f"
+            color=textcolor
         ),
         annotations=[
             go.layout.Annotation(
@@ -560,8 +582,8 @@ def plot_parcat_chart(input_df, title_txt='Shot flow - 2018/2019 NBA Season (col
     fig = go.Figure(data=[go.Parcats(dimensions=[class_dim, zone_dim, assist_dim],
                                      line={'color': color, 'colorscale': colorscale},
                                      hoveron='color', hoverinfo='count+probability',
-                                     labelfont={'size': 13, 'family': "Arial, Tahoma, Helvetica"},
-                                     tickfont={'size': 11, 'family': "Arial, Tahoma, Helvetica"}
+                                     labelfont={'size': 13, 'family': "Open Sans, Arial"},
+                                     tickfont={'size': 11, 'family': "Open Sans, Arial"}
                                      )])
     # fig.update_layout(
     #     width=900,
@@ -652,7 +674,7 @@ def clean_chart_format(fig, add_twitter_name=True):
         plot_bgcolor="white",
         annotations=annotations,
         font=dict(
-            family="Arial, Tahoma, Helvetica",
+            family="Open Sans, Arial",
             size=10,
             color="#404040"
         ),
@@ -685,8 +707,8 @@ def get_rel_stats(rel_hexbin_stats, base_hexbin_stats, min_threshold):
     return rel_hexbin_stats
 
 
-def plot_shot_chart(shots_df, teamname, period, stat_type,
-                    start_date=None, end_date=None, player=None, on_court_list=None, off_court_list=None, gridsize=None, min_samples=None, title=None):
+def plot_hex_shot_chart(shots_df, teamname, period, stat_type,
+                        start_date=None, end_date=None, player=None, on_court_list=None, off_court_list=None, gridsize=None, min_samples=None, title=None):
 
     from copy import deepcopy
 
@@ -771,7 +793,7 @@ def plot_shot_chart(shots_df, teamname, period, stat_type,
             '<i>Point per 100 shots: </i>' + str(round(accs_by_hex[i] * 100, 1))
             for i in range(len(freq_by_hex))
         ]
-        ticktexts = [str(marker_cmin * 100) + '-', "", str(marker_cmax * 100) + '+']
+        ticktexts = [str(int(marker_cmin * 100)) + '-', "", str(int(marker_cmax * 100)) + '+']
 
     # elif stat_type == 'pps_rel':
     #     accs_by_hex = hexbin_stats['shot_ev_by_hex']
@@ -791,6 +813,20 @@ def plot_shot_chart(shots_df, teamname, period, stat_type,
         xlocs, ylocs, freq_by_hex, accs_by_hex,
         marker_cmin, marker_cmax, colorscale=colorscale, legend_title=legend_title,
         title_txt=title_txt, hexbin_text=hexbin_text, ticktexts=ticktexts)
+
+    return fig
+
+
+def plot_raw_shot_chart(shots_df, teamname, period, stat_type,
+                        start_date=None, end_date=None, player=None, on_court_list=None, off_court_list=None, title=None, fig_width=600):
+
+    # fig = go.Figure()
+    shot_locs_df = shots_df[["converted_x", "converted_y", "shot_made"]]
+
+    fig = px.scatter(shot_locs_df, x="converted_x", y="converted_y", color="shot_made")
+    fig = draw_plotly_court(fig, fig_width=fig_width)
+
+
 
     return fig
 
