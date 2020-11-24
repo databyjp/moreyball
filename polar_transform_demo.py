@@ -25,8 +25,7 @@ fig_width = 700
 
 fig = go.Figure()
 fig = viz.draw_plotly_court(fig, fig_width=fig_width, mode="light")
-fig.show()
-
+fig.show(config={'displayModeBar': False})
 
 # Highlight areas around the rim & past the 3
 fig = go.Figure()
@@ -41,8 +40,7 @@ fig.add_shape(
          path=viz.ellipse_arc(a=277.5, b=277.5, start_angle=-np.pi, end_angle=np.pi),
          line=dict(color="gray", width=1), layer='above'),
 )
-# fig.show()
-
+# fig.show(config={'displayModeBar': False})
 
 # Draw marker shapes
 fig = go.Figure()
@@ -63,9 +61,18 @@ fig.add_shape(
          path=viz.ellipse_arc(a=277.5, b=277.5, start_angle=np.pi*7/16, end_angle=np.pi*9/16),
          line=dict(color="gray", width=1), layer='above'),
 )
-# fig.show()
+fig.add_shape(
+    dict(type="path",
+         path=viz.ellipse_arc(a=257.5, b=257.5, start_angle=-np.pi, end_angle=np.pi),
+         line=dict(color="gray", width=1), layer='above'),
+)
+fig.add_shape(
+    dict(type="path",
+         path=viz.ellipse_arc(a=237.5, b=237.5, start_angle=-np.pi, end_angle=np.pi),
+         line=dict(color="gray", width=1), layer='above'),
+)
+fig.show(config={'displayModeBar': False})
 # ========================================
-
 
 # ==========  Draw similar bits in angular coordinates ==========
 fig = go.Figure()
@@ -131,7 +138,7 @@ def format_chart(fig, xrange=[-120, 120], yrange=[-4, 40], margins=10):
 
 
 fig = format_chart(fig)
-# fig.show()
+# fig.show(config={'displayModeBar': False})
 # ========================================
 
 # ==================== Show transformed court w/ lines ====================
@@ -139,6 +146,7 @@ fig = go.Figure()
 
 three_line_col = "blue"
 main_line_col = "#333333"
+light_line_col = "LightGray"
 paper_bgcolor = "wheat"
 plot_bgcolor = "Cornsilk"
 fig.update_layout(
@@ -197,10 +205,10 @@ r = [25 / np.cos(np.radians(i)) for i in t]
 
 for i in range(len(t)-1):
     tmp_dict = dict(type="line", x0=90-t[i], y0=r[i], x1=90-t[i+1], y1=r[i+1],
-                    line=dict(color="gray", width=1), layer='above')
+                    line=dict(color=light_line_col, width=1), layer='above')
     new_lines.append(tmp_dict)  # Right side of graph / Left on court
     tmp_dict = dict(type="line", x0=-90+t[i], y0=r[i], x1=-90+t[i+1], y1=r[i+1],
-                    line=dict(color="gray", width=1), layer='above')
+                    line=dict(color=light_line_col, width=1), layer='above')
     new_lines.append(tmp_dict)  # Left side of graph / Right on court
 
 # Court boundary - top line
@@ -211,10 +219,10 @@ r = [41.75 / np.sin(np.radians(i)) for i in t]
 
 for i in range(len(t)-1):
     tmp_dict = dict(type="line", x0=90-t[i], y0=r[i], x1=90-t[i+1], y1=r[i+1],
-                    line=dict(color="gray", width=1), layer='above')
+                    line=dict(color=light_line_col, width=1), layer='above')
     new_lines.append(tmp_dict)  # Right side of graph / Left on court
     tmp_dict = dict(type="line", x0=-90+t[i], y0=r[i], x1=-90+t[i+1], y1=r[i+1],
-                    line=dict(color="gray", width=1), layer='above')
+                    line=dict(color=light_line_col, width=1), layer='above')
     new_lines.append(tmp_dict)  # Left side of graph / Right on court
 
 # Court boundary - bottom line
@@ -223,15 +231,13 @@ cnr_angle_max = -90
 t = np.linspace(cnr_angle_min, cnr_angle_max, 20)
 r = [abs(5.25 / np.sin(np.radians(i))) for i in t]
 
-bot_lines = list()
 for i in range(len(t)-1):
     tmp_dict = dict(type="line", x0=90-t[i], y0=r[i], x1=90-t[i+1], y1=r[i+1],
-                    line=dict(color="gray", width=1), layer='above')
-    bot_lines.append(tmp_dict)  # Right side of graph / Left on court
+                    line=dict(color=light_line_col, width=1), layer='above')
+    new_lines.append(tmp_dict)  # Right side of graph / Left on court
     tmp_dict = dict(type="line", x0=-90+t[i], y0=r[i], x1=-90+t[i+1], y1=r[i+1],
-                    line=dict(color="gray", width=1), layer='above')
-    bot_lines.append(tmp_dict)  # Left side of graph / Right on court
-new_lines += bot_lines
+                    line=dict(color=light_line_col, width=1), layer='above')
+    new_lines.append(tmp_dict)  # Left side of graph / Right on court
 
 # Add restricted area semicircle
 new_lines.append(
@@ -239,10 +245,7 @@ new_lines.append(
          line=dict(color="orange", width=1), layer='above')
 )
 
-
-fig.update_layout(
-    shapes=new_lines
-)
+fig.update_layout(shapes=new_lines)
 
 fig = format_chart(fig, xrange=[-180, 180], yrange=[-2, 50], margins=0)
-fig.show()
+fig.show(config={'displayModeBar': False})
