@@ -14,17 +14,17 @@ root_logger.addHandler(sh)
 import pandas as pd
 import numpy as np
 import sklearn
-from sklearn.cluster import DBSCAN
+import viz
+import plotly.express as px
 
 desired_width = 320
 pd.set_option('display.max_columns', 20)
 pd.set_option('display.width', desired_width)
 
 df_path = "procdata/shots_df_19_20.csv"
-shots_df = pd.read_csv(df_path)
+allshots_df = pd.read_csv(df_path)
 
-shots_df
+player = "Luka Doncic"
+shots_df = allshots_df[allshots_df["player"] == player]
 
-X = np.array([[1, 2], [2, 2], [2, 3],
-              [8, 7], [8, 8], [25, 80]])
-clustering = DBSCAN(eps=3, min_samples=2).fit(X)
+# Group shots first, and then cluster?

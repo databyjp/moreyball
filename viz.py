@@ -22,28 +22,35 @@ def fill_def_params(gridsize=None, min_samples=None):
     return gridsize, min_samples
 
 
-def draw_plotly_court(fig, fig_width=600, margins=10, mode="dark"):
-
-    # mode should be "dark" or "light"
-
-    # From: https://community.plot.ly/t/arc-shape-with-path/7205/5
-    def ellipse_arc(x_center=0.0, y_center=0.0, a=10.5, b=10.5, start_angle=0.0, end_angle=2 * np.pi, N=200, closed=False):
-        t = np.linspace(start_angle, end_angle, N)
-        x = x_center + a * np.cos(t)
-        y = y_center + b * np.sin(t)
-        path = f'M {x[0]}, {y[0]}'
-        for k in range(1, len(t)):
-            path += f'L{x[k]}, {y[k]}'
-        if closed:
-            path += ' Z'
-        return path
+def reshape_fig(fig, fig_width, margins=10):
 
     fig_height = fig_width * (470 + 2 * margins) / (500 + 2 * margins)
     fig.update_layout(width=fig_width, height=fig_height)
-
     # Set axes ranges
     fig.update_xaxes(range=[-250 - margins, 250 + margins])
     fig.update_yaxes(range=[-52.5 - margins, 417.5 + margins])
+
+    return fig
+
+
+# From: https://community.plot.ly/t/arc-shape-with-path/7205/5
+def ellipse_arc(x_center=0.0, y_center=0.0, a=10.5, b=10.5, start_angle=0.0, end_angle=2 * np.pi, N=200, closed=False):
+    t = np.linspace(start_angle, end_angle, N)
+    x = x_center + a * np.cos(t)
+    y = y_center + b * np.sin(t)
+    path = f'M {x[0]}, {y[0]}'
+    for k in range(1, len(t)):
+        path += f'L{x[k]}, {y[k]}'
+    if closed:
+        path += ' Z'
+    return path
+
+
+def draw_plotly_court(fig, fig_width=600, mode="dark"):
+
+    # mode should be "dark" or "light"
+
+    fig = reshape_fig(fig, fig_width)
 
     threept_break_y = 89.47765084
 
@@ -197,7 +204,7 @@ def draw_plotly_court(fig, fig_width=600, margins=10, mode="dark"):
     return fig
 
 
-def get_hexbin_stats(shots_df, gridsize=None, min_samples=None, min_freqs=1):
+def get_hexbin_stats(shots_df, gridsize=None, min_samples=None, min_freqs=2):
 
     import matplotlib
     import matplotlib.pyplot as plt
@@ -247,32 +254,34 @@ def get_hexbin_stats(shots_df, gridsize=None, min_samples=None, min_freqs=1):
 
     accs_by_hex = np.zeros(len(x))
     # ===== Calculate shot accuracies
-    # # raw accuracies
-    # accs_by_hex = makes_by_hex/shots_by_hex
-    # accs_by_hex[np.isnan(makes_by_hex/shots_by_hex)] = 0
+    # raw accuracies
+    accs_by_hex = makes_by_hex/shots_by_hex
+    accs_by_hex[np.isnan(makes_by_hex/shots_by_hex)] = 0
     # # by zones
     # accs_by_hex = np.array([accs_by_zones[zones_list[i]] for i in range(len(zones_list))])
+
     # by local averaging
     # get closest points for averaging
+    smoothing = 1.5
     xy_df = pd.DataFrame([x, y, makes_by_hex, shots_by_hex]).transpose().rename({0: "x", 1: "y", 2: "makes", 3: "shots"}, axis=1)
     x_spacing = np.sort(xy_df.x.unique())[1] - np.sort(xy_df.x.unique())[0]
     y_spacing = np.sort(xy_df.y.unique())[1] - np.sort(xy_df.y.unique())[0]
-    smoothing = 2
-
     len_df = list()
-    for i in range(len(x)):
-        tmp_x = x[i]
-        tmp_y = y[i]
-        filt_xy_df = xy_df[
-            ((xy_df.x - tmp_x).abs() < (x_spacing * 2 * smoothing))
-            & ((xy_df.y - tmp_y).abs() < (y_spacing * 2 * smoothing))
-        ]
-        len_df.append(len(filt_xy_df))
-        shots_sum = filt_xy_df.shots.sum()
-        if shots_sum > 0:
-            accs_by_hex[i] = filt_xy_df.makes.sum() / shots_sum
-        else:
-            accs_by_hex[i] = 0
+    if smoothing >= 1:
+        for i in range(len(x)):
+            tmp_x = x[i]
+            tmp_y = y[i]
+            filt_xy_df = xy_df[
+                ((xy_df.x - tmp_x).abs() < (x_spacing * smoothing))
+                & ((xy_df.y - tmp_y).abs() < (y_spacing * smoothing))
+            ]
+            len_df.append(len(filt_xy_df))
+            shots_sum = filt_xy_df.shots.sum()
+            if shots_sum > 0:
+                accs_by_hex[i] = filt_xy_df.makes.sum() / shots_sum
+            else:
+                accs_by_hex[i] = 0
+        logger.info(f"Smoothing done, max {np.max(len_df)}, min {np.min(len_df)}, mean {np.mean(len_df)}, stdev {np.std(len_df)}")
 
     ass_perc_by_zones = {k: assists_by_zones[k] / makes_by_zones[k] for k in makes_by_zones.keys()}
     ass_perc_by_hex = np.array([ass_perc_by_zones[zones_list[i]] for i in range(len(zones_list))])
@@ -432,7 +441,7 @@ def plot_shot_hexbins_plotly(
         marker_cmin=None, marker_cmax=None, colorscale='RdYlBu_r',
         title_txt='', legend_title='Accuracy', fig_width=800,
         hexbin_text=[], ticktexts=[], logo_url=None, show_fig=False, img_out=None,
-        mode="dark"):
+        mode="dark", size_factor=18):
     """
     Plot shot chart as hexbins
     :param xlocs: list of x locations
@@ -466,12 +475,17 @@ def plot_shot_hexbins_plotly(
         marker_cmax = max(accs_by_hex)
 
     fig = go.Figure()
-    draw_plotly_court(fig, fig_width=fig_width)
+    draw_plotly_court(fig, fig_width=fig_width, mode=mode)
     fig.add_trace(go.Scatter(
         x=xlocs, y=ylocs, mode='markers', name='markers',
         text=hexbin_text,
         marker=dict(
-            size=freq_by_hex, sizemode='area', sizeref=2. * max(freq_by_hex) / (18. ** 2), sizemin=1.5,
+            # Variable size according to frequency
+            size=freq_by_hex,
+            sizemode='area',
+            sizeref=2. * max(freq_by_hex) / (float(size_factor) ** 2),
+            sizemin=1.5,
+
             color=accs_by_hex, colorscale=colorscale,
             colorbar=dict(
                 # thickness=15,
@@ -501,18 +515,14 @@ def plot_shot_hexbins_plotly(
     ))
 
     if show_fig:
-        fig.show(
-            config={
-                'displayModeBar': False
-            }
-        )
+        fig.show(config={'displayModeBar': False})
     if img_out is not None:
         fig.write_image(img_out)
 
     return fig
 
 
-def add_shotchart_note(fig, title_txt, title_xloc, title_yloc=0.9, size=12, textcolor="#eeeeee"):
+def add_shotchart_note(fig, title_txt, title_xloc, title_yloc=0.9, size=12, textcolor="#eeeeee", add_sig=True):
 
     # textcolor = "#eeeeee"
 
@@ -534,16 +544,22 @@ def add_shotchart_note(fig, title_txt, title_xloc, title_yloc=0.9, size=12, text
             size=14,
             color=textcolor
         ),
-        annotations=[
-            go.layout.Annotation(
-                x=0.5,
-                y=0.05,
-                showarrow=False,
-                text="Twitter: @_jphwang",
-                xref="paper",
-                yref="paper"
-            ),
-        ],
+    )
+    if add_sig:
+        fig = add_jph_signature(fig)
+    return fig
+
+
+def add_jph_signature(fig, yloc=0.05):
+    fig.add_annotation(
+        go.layout.Annotation(
+            x=0.5,
+            y=yloc,
+            showarrow=False,
+            text="Twitter: @_jphwang",
+            xref="paper",
+            yref="paper"
+        ),
     )
     return fig
 
@@ -706,8 +722,14 @@ def get_rel_stats(rel_hexbin_stats, base_hexbin_stats, min_threshold):
     return rel_hexbin_stats
 
 
+def clip_hex_freq(input_freqs, max_freq=0.002):
+    freq_by_hex = np.array([min(max_freq, i) for i in input_freqs])
+    return freq_by_hex
+
+
 def plot_hex_shot_chart(shots_df, teamname, period, stat_type,
-                        start_date=None, end_date=None, player=None, on_court_list=None, off_court_list=None, gridsize=None, min_samples=None, title=None):
+                        start_date=None, end_date=None, player=None, on_court_list=None, off_court_list=None,
+                        gridsize=None, min_samples=None, title=None, mode=None):
 
     from copy import deepcopy
 
@@ -736,8 +758,6 @@ def plot_hex_shot_chart(shots_df, teamname, period, stat_type,
     hexbin_stats = get_hexbin_stats(temp_df, gridsize=gridsize, min_samples=min_samples)
     title_suffix = teamname + ', Qtr: ' + str(period)
 
-    max_freq = 0.002
-
     # PLOT OPTIONS: SHOT ACCURACY (ABSOLUTE OR REL VS AVG FROM ZONE); SHOT PPS - ABSOLUTE, OR VS AVG FROM ZONE)
 
     if stat_type == 'acc_abs':
@@ -750,7 +770,7 @@ def plot_hex_shot_chart(shots_df, teamname, period, stat_type,
         legend_title = 'Accuracy'
         title_suffix += '<BR>Shot accuracy'
 
-        freq_by_hex = np.array([min(max_freq, i) for i in hexbin_stats['freq_by_hex']])
+        freq_by_hex = clip_hex_freq(hexbin_stats['freq_by_hex'])
         hexbin_text = [
             '<i>Accuracy: </i>' + str(round(accs_by_hex[i] * 100, 1)) + '%<BR>'
             for i in range(len(freq_by_hex))
@@ -769,7 +789,7 @@ def plot_hex_shot_chart(shots_df, teamname, period, stat_type,
         legend_title = 'Accuracy'
         title_suffix += '<BR>Shot accuracy vs NBA average'
 
-        freq_by_hex = np.array([min(max_freq, i) for i in hexbin_stats['freq_by_hex']])
+        freq_by_hex = clip_hex_freq(hexbin_stats['freq_by_hex'])
         hexbin_text = [
             '<i>Accuracy: </i>' + str(round(accs_by_hex[i] * 100, 1)) + '%<BR>'
             for i in range(len(freq_by_hex))
@@ -787,7 +807,7 @@ def plot_hex_shot_chart(shots_df, teamname, period, stat_type,
         legend_title = 'PTS/100'
         title_suffix += '<BR>Expected points per 100 shots'
 
-        freq_by_hex = np.array([min(max_freq, i) for i in hexbin_stats['freq_by_hex']])
+        freq_by_hex = clip_hex_freq(hexbin_stats['freq_by_hex'])
         hexbin_text = [
             '<i>Point per 100 shots: </i>' + str(round(accs_by_hex[i] * 100, 1))
             for i in range(len(freq_by_hex))
@@ -811,21 +831,42 @@ def plot_hex_shot_chart(shots_df, teamname, period, stat_type,
     fig = plot_shot_hexbins_plotly(
         xlocs, ylocs, freq_by_hex, accs_by_hex,
         marker_cmin, marker_cmax, colorscale=colorscale, legend_title=legend_title,
-        title_txt=title_txt, hexbin_text=hexbin_text, ticktexts=ticktexts)
+        title_txt=title_txt, hexbin_text=hexbin_text, ticktexts=ticktexts, mode=mode)
 
     return fig
 
 
-def plot_raw_shot_chart(shots_df, teamname, period, stat_type,
-                        start_date=None, end_date=None, player=None, on_court_list=None, off_court_list=None, title=None, fig_width=600):
+def plot_raw_shot_chart(shots_df, fig_width=800, mode="light"):
 
-    # fig = go.Figure()
-    shot_locs_df = shots_df[["converted_x", "converted_y", "shot_made"]]
+    fig = go.Figure()
+    draw_plotly_court(fig, fig_width=fig_width, mode=mode)
 
-    fig = px.scatter(shot_locs_df, x="converted_x", y="converted_y", color="shot_made")
-    fig = draw_plotly_court(fig, fig_width=fig_width)
+    if mode == "dark":
+        textcolor = "#ffffff"
+    else:
+        textcolor = "#333333"
 
+    for make_miss in [0, 1]:
+        if make_miss == 0:
+            symbol = "x"
+            marker_color = "red"
+        else:
+            symbol = "circle"
+            marker_color = "blue"
 
+        xlocs = shots_df[shots_df["shot_made"] == make_miss]["original_x"]
+        ylocs = shots_df[shots_df["shot_made"] == make_miss]["original_y"]
+
+        fig.add_trace(go.Scatter(
+            x=xlocs, y=ylocs, mode='markers', name='markers',
+            marker=dict(
+                size=2,
+                line=dict(width=0.6, color=textcolor), symbol=symbol,
+                color=marker_color,
+            ),
+            hoverinfo='text'
+        ))
+    fig.update_layout(showlegend=False)
 
     return fig
 
