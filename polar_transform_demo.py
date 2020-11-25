@@ -71,13 +71,13 @@ fig.add_shape(
          path=viz.ellipse_arc(a=237.5, b=237.5, start_angle=-np.pi, end_angle=np.pi),
          line=dict(color="gray", width=1), layer='above'),
 )
-fig.show(config={'displayModeBar': False})
+# fig.show(config={'displayModeBar': False})
 # ========================================
 
 # ==========  Draw similar bits in angular coordinates ==========
 fig = go.Figure()
 
-three_line_col = "blue"
+three_line_col = "orange"
 main_line_col = "#333333"
 paper_bgcolor = "wheat"
 plot_bgcolor = "Cornsilk"

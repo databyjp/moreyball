@@ -29,7 +29,12 @@ labels = {
 }
 
 
-def grp_shots(shots_df, tbin_thresh=9):
+def grp_polar_shots(shots_df, tbin_smoothing_bins=1):
+    """
+    :param shots_df:
+    :param tbin_smoothing_bins: How many adjacent (anglular) bins to use for data smoothing
+    :return:
+    """
     grp_shots_df = shots_df.groupby(["tbin", "rbin"]).count()["game_id"]
     grp_makes_df = shots_df.groupby(["tbin", "rbin"]).sum()["shot_made"]
     grp_pcts_df = grp_makes_df / grp_shots_df
@@ -53,14 +58,15 @@ def grp_shots(shots_df, tbin_thresh=9):
         grp_shots_df.loc[i, "rel_pct"] = row["pct"] - avg
     grp_shots_df = grp_shots_df.assign(better_side=np.sign(grp_shots_df.rel_pct))
 
-    # Perform averaging for PPS
+    # Perform averaging for PPS - keep distance constance, only average by adjacent angle bins
+    tbin_thresh = tbin_smoothing_bins * abs(np.sort(shots_df.tbin.unique())[0] - np.sort(shots_df.tbin.unique())[1])
     for i, row in grp_shots_df.iterrows():
         temp_rows = grp_shots_df[
             (grp_shots_df["rbin"] == row["rbin"]) &
             (grp_shots_df["tbin"] <= row["tbin"] + tbin_thresh) &
             (grp_shots_df["tbin"] >= row["tbin"] - tbin_thresh)
         ]
-        tot_pts = np.sum(temp_rows["pps"] * temp_rows["attempts"])
+        tot_pts = np.sum(temp_rows["pps"] * temp_rows["attempts"])  # Make sure to average using totals
         tot_shots = np.sum(temp_rows["attempts"])
         mean_pps = tot_pts/tot_shots
         grp_shots_df.loc[row.name, "pps"] = mean_pps
@@ -92,7 +98,9 @@ def format_polar_chart(fig, marker_cmax, marker_cmin):
             showticklabels=True,
             fixedrange=True,
             zerolinewidth=0.2,
-            zerolinecolor="#dddddd"
+            zerolinecolor="#dddddd",
+            tickfont={"size": 11},
+            title_font={"size": 13},
         ),
         xaxis=dict(
             showgrid=True,
@@ -102,7 +110,9 @@ def format_polar_chart(fig, marker_cmax, marker_cmin):
             showticklabels=True,
             fixedrange=True,
             zerolinewidth=0.2,
-            zerolinecolor="#dddddd"
+            zerolinecolor="#dddddd",
+            tickfont={"size": 11},
+            title_font={"size": 13},
         ),
     )
     ticktexts = [str(marker_cmin) + '-', "", str(marker_cmax) + '+']
@@ -115,8 +125,9 @@ def format_polar_chart(fig, marker_cmax, marker_cmin):
         len=0.3,
         tickvals=[marker_cmin, (marker_cmin + marker_cmax) / 2, marker_cmax],
         ticktext=ticktexts,
+        titlefont=dict(size=12),
         tickfont=dict(
-            size=14,
+            size=12,
             color=textcolor
         )
     ))
@@ -137,36 +148,13 @@ def plot_polar_pps(tmp_df, marker_cmin=75, marker_cmax=125):
     return fig
 
 
-# ==========  Draw similar bits in angular coordinates ==========
-yrs = list(range(5, 20))
-
-for yr in yrs[-1:]:
-    yr_a = ("0" + str(yr))[-2:]
-    yr_b = ("0" + str(yr+1))[-2:]
-    df_path = f"procdata/shots_df_{yr_a}_{yr_b}.csv"
-    shots_df = pd.read_csv(df_path)
-    shots_df = shots_df.assign(shot_dist_calc=((shots_df.original_x*shots_df.original_x)+((shots_df.original_y)*(shots_df.original_y)))**0.5)
-
-    # fig = px.histogram(shots_df, x="angle", nbins=100)
-    # fig.show(config={'displayModeBar': False})
-    #
-    # fig = px.scatter(shots_df, x="angle", y="shot_distance")
-    # fig.show(config={'displayModeBar': False})
-
-    paper_bgcolor = "wheat"
-    plot_bgcolor = "Cornsilk"
-    textcolor = "#333333"
-
-    shots_df = shots_df.assign(angle=(np.arctan2(shots_df.original_x, shots_df.original_y) * 180 / np.pi))
-    shots_df.loc[(shots_df["angle"]==-180), "angle"] = 0  # Adjust for weird coordinate system use on dunks / layups
-
+def add_polar_bins(shots_df, tbin_size=9, rbin_size=30):
     # Group shots into buckets / bins
     # One challenge is the pesky 3-point line - between 22 and 23.75 feet, some shots are threes and some aren't
     # So let's make sure that no groups have 3s and 2s coexist.
     # The 3pt arc meets the corner 3 line at 22.13 degrees
-    tbin_size = 9
+
     shots_df = shots_df.assign(tbin=tbin_size * np.sign(shots_df.angle) * ((np.abs(shots_df.angle) + (tbin_size/2)) // tbin_size))
-    rbin_size = 30
     shots_df = shots_df.assign(rbin=0.1 * rbin_size * (0.5 + (np.abs(shots_df.shot_dist_calc) // rbin_size)))
 
     # For the last bins of twos
@@ -180,25 +168,22 @@ for yr in yrs[-1:]:
     # For corner threes:
     for temp_t in [67.5, 76.5, 85.5, 94.5]:
         if temp_t == 67.5:
-            new_rbin = 24.5
+            new_rbin = 24.5  # This is an awkward bin - between corner and the full length; so show it as such
         else:
-            new_rbin = 23.5
+            new_rbin = 23.5  # Corner 3
+        # Left corner
         shots_df.loc[((shots_df.is_three == True) & (shots_df.angle > -temp_t-9) & (shots_df.angle < -temp_t)), "rbin"] = new_rbin
         shots_df.loc[((shots_df.is_three == True) & (shots_df.angle > -temp_t-9) & (shots_df.angle < -temp_t)), "tbin"] = -temp_t-4.5
-        shots_df.loc[((shots_df.is_three == True) & (shots_df.angle > temp_t-9) & (shots_df.angle > temp_t)), "rbin"] = new_rbin
-        shots_df.loc[((shots_df.is_three == True) & (shots_df.angle > temp_t-9) * (shots_df.angle > temp_t)), "tbin"] = temp_t+4.5
 
-    grp_shots_df = grp_shots(shots_df)
+        shots_df.loc[((shots_df.is_three == True) & (shots_df.angle > temp_t) & (shots_df.angle < temp_t+9)), "rbin"] = new_rbin
+        shots_df.loc[((shots_df.is_three == True) & (shots_df.angle > temp_t) & (shots_df.angle < temp_t+9)), "tbin"] = temp_t+4.5
 
-    fig = plot_polar_pps(grp_shots_df)
-    fig = viz.add_shotchart_note(fig,
-                                 "<B>NBA - shots by angle & distance</B><BR><BR>" +
-                                 "'" + yr_a + "/'" + yr_b + " season<BR>" +
-                                 "Size: Frequency<BR>Color: Points / 100 shots",
-                                 title_xloc=0.085, title_yloc=0.915, size=13, textcolor="#333333",
-                                 add_sig=False)
+    return shots_df
 
-    three_line_col = "orange"
+
+def add_polar_visual_assists(fig, three_line_col="orange", restricted_line_col="lightgray"):
+
+    # Add 3pt line
     cnr_angle_min = -np.degrees(np.arctan(5.25 / 22))
     cnr_angle_max = np.degrees(np.arccos(22 / 23.75))
     t = np.linspace(cnr_angle_min, cnr_angle_max, 20)
@@ -216,16 +201,91 @@ for yr in yrs[-1:]:
         dict(type="line", x0=-90 + cnr_angle_max, y0=23.75, x1=90 - cnr_angle_max, y1=23.75,
              line=dict(color=three_line_col, width=1), layer='above')
     )
+
+    # Add restricted area line
     new_lines.append(
         dict(type="line", x0=-90, y0=4, x1=90, y1=4,
-             line=dict(color="lightgray", width=1), layer='above')
+             line=dict(color=restricted_line_col, width=1), layer='above')
     )
-
     fig.update_layout(shapes=new_lines)
+    return fig
 
 
+# ==========  Draw similar bits in angular coordinates ==========
+yrs = list(range(5, 20))
+
+for yr in yrs[-1:]:
+
+    # ===== Load DataFrame with shot data
+    yr_a = ("0" + str(yr))[-2:]
+    yr_b = ("0" + str(yr+1))[-2:]
+    df_path = f"procdata/shots_df_{yr_a}_{yr_b}.csv"
+    shots_df = pd.read_csv(df_path)
+
+    # Generate shot angle & distance data
+    shots_df = shots_df.assign(shot_dist_calc=((shots_df.original_x*shots_df.original_x)+((shots_df.original_y)*(shots_df.original_y)))**0.5)
+    shots_df = shots_df.assign(angle=(np.arctan2(shots_df.original_x, shots_df.original_y) * 180 / np.pi))
+    shots_df.loc[(shots_df["angle"] == -180), "angle"] = 0  # Adjust for weird coordinate system use on point-blank shots -
+
+    # fig = px.histogram(shots_df, x="angle", nbins=100)
+    # fig.show(config={'displayModeBar': False})
+    #
+    # fig = px.scatter(shots_df, x="angle", y="shot_distance")
+    # fig.show(config={'displayModeBar': False})
+
+    paper_bgcolor = "wheat"
+    plot_bgcolor = "Cornsilk"
+    textcolor = "#333333"
+
+    shots_df = add_polar_bins(shots_df)
+
+    # ===== Plot shots_df in the polar coordinate space
+    # For the whole NBA
+    grp_shots_df = grp_polar_shots(shots_df)
+    fig = plot_polar_pps(grp_shots_df)
+    fig = viz.add_shotchart_note(fig,
+                                 "<B>NBA - shots by angle & distance</B><BR><BR>" +
+                                 "'" + yr_a + "/'" + yr_b + " season<BR>" +
+                                 "Size: Frequency<BR>Color: Points / 100 shots",
+                                 title_xloc=0.085, title_yloc=0.915, size=13, textcolor="#333333",
+                                 add_sig=False)
+    fig = add_polar_visual_assists(fig)
     fig.write_image(f"temp/nba_polar_{yr_a}_{yr_b}.png")
     fig.show(config={'displayModeBar': False})
+
+    # For teams
+    teams = ["HOU", "SAS", "OKC", "LAL", "GSW"]
+    for team in teams:
+        team_df = shots_df[shots_df.team == team]
+        grp_shots_df = grp_polar_shots(team_df)
+        fig = plot_polar_pps(grp_shots_df)
+        fig = viz.add_shotchart_note(fig,
+                                     f"<B>{team} - shots by angle & distance</B><BR><BR>" +
+                                     "'" + yr_a + "/'" + yr_b + " season<BR>" +
+                                     "Size: Frequency<BR>Color: Points / 100 shots",
+                                     title_xloc=0.085, title_yloc=0.915, size=13, textcolor="#333333",
+                                     add_sig=False)
+        fig = add_polar_visual_assists(fig)
+        fig.write_image(f"temp/{team}_polar_{yr_a}_{yr_b}.png")
+        fig.show(config={'displayModeBar': False})
+
+    players = ["Luka Doncic", "James Harden", "LeBron James", "DeMar DeRozan",
+               "Chris Paul", "Nikola Jokic", "Damian Lillard"]
+
+    for player in players:
+        pl_df = shots_df[shots_df.player == player]
+        grp_shots_df = grp_polar_shots(pl_df)
+        fig = plot_polar_pps(grp_shots_df)
+        fig = viz.add_shotchart_note(fig,
+                                     f"<B>{player} - shots by angle & distance</B><BR><BR>" +
+                                     "'" + yr_a + "/'" + yr_b + " season<BR>" +
+                                     "Size: Frequency<BR>Color: Points / 100 shots",
+                                     title_xloc=0.085, title_yloc=0.915, size=13, textcolor="#333333",
+                                     add_sig=False)
+        fig = add_polar_visual_assists(fig)
+        fig.write_image(f"temp/{player}_polar_{yr_a}_{yr_b}.png")
+        fig.show(config={'displayModeBar': False})
+
     # fig = px.scatter(grp_shots_df, x="tbin", y="rbin", size="attempts", color="pct",
     #                  color_continuous_scale=px.colors.sequential.Mint, template="plotly_white",
     #                  range_x=[-180, 180], range_y=[-55, 350],
@@ -321,7 +381,7 @@ for yr in yrs[-1:]:
     #     # ========================================
     #     # ========================================
     #     pl_df = shots_df[shots_df["player"] == player]
-    #     grp_shots_df = grp_shots(pl_df)
+    #     grp_shots_df = grp_polar_shots(pl_df)
     #
     #     tmp_df = grp_shots_df
     #     # tmp_df = grp_shots_df[(grp_shots_df["better_side"] == 1)]

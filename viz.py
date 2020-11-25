@@ -61,6 +61,7 @@ def draw_plotly_court(fig, fig_width=600, mode="dark"):
         plot_bgcolor = "black"
     else:
         three_line_col = "#333333"
+        three_line_col = "orange"
         main_line_col = "#333333"
         paper_bgcolor = "white"
         plot_bgcolor = "white"
@@ -140,11 +141,7 @@ def draw_plotly_court(fig, fig_width=600, mode="dark"):
                  line=dict(color=main_line_col, width=1), layer='below'),
             dict(type="path",
                  path=ellipse_arc(a=237.5, b=237.5, start_angle=0.386283101, end_angle=np.pi - 0.386283101),
-                 line=dict(color=main_line_col, width=1), layer='below'),
-            dict(
-                type="line", x0=-220, y0=-52.5, x1=-220, y1=threept_break_y,
-                line=dict(color=three_line_col, width=1), layer='below'
-            ),
+                 line=dict(color=three_line_col, width=1), layer='below'),
             dict(
                 type="line", x0=-220, y0=-52.5, x1=-220, y1=threept_break_y,
                 line=dict(color=three_line_col, width=1), layer='below'
@@ -722,7 +719,7 @@ def get_rel_stats(rel_hexbin_stats, base_hexbin_stats, min_threshold):
     return rel_hexbin_stats
 
 
-def clip_hex_freq(input_freqs, max_freq=0.002):
+def clip_hex_freq(input_freqs, max_freq=0.2):
     freq_by_hex = np.array([min(max_freq, i) for i in input_freqs])
     return freq_by_hex
 

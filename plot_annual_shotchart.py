@@ -26,30 +26,30 @@ for yr in yrs[-1:]:
     yr_b = ("0" + str(yr+1))[-2:]
     allshots_df = pd.read_csv(f'procdata/shots_df_{yr_a}_{yr_b}.csv', index_col=0)
 
-    players = ["Luka Doncic", "James Harden", "LeBron James", "DeMar DeRozan",
-               "Chris Paul", "Nikola Jokic", "Damian Lillard"]
-
-    for player in players:
-    # player = "Luka Doncic"
-        shots_df = allshots_df[allshots_df["player"] == player]
-        if len(shots_df) > 100:
-            fig = viz.plot_hex_shot_chart(shots_df, 'NBA', "All", "pps_abs", title="Shot chart", player=player, mode="light")
-            fig = viz.add_shotchart_note(fig,
-                                         "<B>Evolution of " + player + "'s<BR>shot distribution</B><BR><BR>" +
-                                         "'" + yr_a + "/'" + yr_b + " season<BR><BR>" +
-                                         "Size: Shot frequency<BR>Color: Points / 100 shots",
-                                         title_xloc=0.1, title_yloc=0.885, size=15, textcolor="#333333")
-            fig.show()
-            fig.write_image(f"temp/{player}_{yr_a}_{yr_b}.png")
-
-    # fig = viz.plot_hex_shot_chart(allshots_df, 'NBA', "All", "pps_abs", title="Shot chart", mode="light")
-    # fig = viz.add_shotchart_note(fig,
-    #                              "<B>Evolution of the NBA<BR>by shot distribution</B><BR><BR>" +
-    #                              "'" + yr_a + "/'" + yr_b + " season<BR><BR>" +
-    #                              "Size: Shot frequency<BR>Color: Points / 100 shots",
-    #                              title_xloc=0.1, title_yloc=0.885, size=15, textcolor="#333333")
+    # players = ["Luka Doncic", "James Harden", "LeBron James", "DeMar DeRozan",
+    #            "Chris Paul", "Nikola Jokic", "Damian Lillard"]
     #
-    # fig.show()
-    # fig.write_image(f"temp/frame_{yr_a}_{yr_b}.png")
+    # for player in players:
+    # # player = "Luka Doncic"
+    #     shots_df = allshots_df[allshots_df["player"] == player]
+    #     if len(shots_df) > 100:
+    #         fig = viz.plot_hex_shot_chart(shots_df, 'NBA', "All", "pps_abs", title="Shot chart", player=player, mode="light")
+    #         fig = viz.add_shotchart_note(fig,
+    #                                      "<B>Evolution of " + player + "'s<BR>shot distribution</B><BR><BR>" +
+    #                                      "'" + yr_a + "/'" + yr_b + " season<BR><BR>" +
+    #                                      "Size: Shot frequency<BR>Color: Points / 100 shots",
+    #                                      title_xloc=0.1, title_yloc=0.885, size=15, textcolor="#333333")
+    #         fig.show()
+    #         fig.write_image(f"temp/{player}_{yr_a}_{yr_b}.png")
+
+    fig = viz.plot_hex_shot_chart(allshots_df, 'NBA', "All", "pps_abs", title="Shot chart", mode="light")
+    fig = viz.add_shotchart_note(fig,
+                                 "<B>Evolution of the NBA<BR>by shot distribution</B><BR><BR>" +
+                                 "'" + yr_a + "/'" + yr_b + " season<BR><BR>" +
+                                 "Size: Shot frequency<BR>Color: Points / 100 shots",
+                                 title_xloc=0.1, title_yloc=0.885, size=15, textcolor="#333333")
+
+    fig.show()
+    fig.write_image(f"temp/frame_{yr_a}_{yr_b}.png")
 
 
