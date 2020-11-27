@@ -63,34 +63,34 @@ for yr in yrs[:]:
     fig.show(config={'displayModeBar': False})
     fig.write_image(f"temp/nba_polar_{yr_a}_{yr_b}.png")
 
-    # # For teams
-    # teams = ["HOU", "SAS", "OKC", "LAL", "GSW"]
-    # for team in teams:
-    #     team_df = shots_df[shots_df.team == team]
-    #     grp_shots_df = dataproc.grp_polar_shots(team_df)
-    #     fig = viz.plot_polar_pps(grp_shots_df)
-    #     fig = viz.add_shotchart_note(fig,
-    #                                  f"<B>{team} - shots by angle & distance</B><BR><BR>" +
-    #                                  "'" + yr_a + "/'" + yr_b + " season<BR>" +
-    #                                  "Size: Frequency<BR>Color: Points / 100 shots",
-    #                                  title_xloc=0.085, title_yloc=0.915, size=13, textcolor="#333333",
-    #                                  add_sig=False)
-    #     fig = viz.add_polar_visual_assists(fig)
-    #     fig.show(config={'displayModeBar': False})
-    #     fig.write_image(f"temp/{team}_polar_{yr_a}_{yr_b}.png")
-    #
-    #     crunch_df = shots_df[(np.abs(shots_df.away_score - shots_df.home_score) <= 8) & (shots_df.period >= 4) & (shots_df.team == team)]
-    #     grp_shots_df = dataproc.grp_polar_shots(crunch_df)
-    #     fig = viz.plot_polar_pps(grp_shots_df)
-    #     fig = viz.add_shotchart_note(fig,
-    #                                  f"<B>{team} - crunch time (score within 8 in 4Q+) shots by angle & distance</B><BR><BR>" +
-    #                                  "'" + yr_a + "/'" + yr_b + " season<BR>" +
-    #                                  "Size: Frequency<BR>Color: Points / 100 shots",
-    #                                  title_xloc=0.085, title_yloc=0.915, size=13, textcolor="#333333",
-    #                                  add_sig=False)
-    #     fig = viz.add_polar_visual_assists(fig)
-    #     fig.show(config={'displayModeBar': False})
-    #     fig.write_image(f"temp/{team}_crunchtime_polar_{yr_a}_{yr_b}.png")
+    # For teams
+    teams = ["HOU", ""]
+    for team in teams:
+        team_df = shots_df[shots_df.team == team]
+        grp_shots_df = dataproc.grp_polar_shots(team_df)
+        fig = viz.plot_polar_pps(grp_shots_df)
+        fig = viz.add_shotchart_note(fig,
+                                     f"<B>{team} - shots by angle & distance</B><BR><BR>" +
+                                     "'" + yr_a + "/'" + yr_b + " season<BR>" +
+                                     "Size: Frequency<BR>Color: Points / 100 shots",
+                                     title_xloc=0.085, title_yloc=0.915, size=13, textcolor="#333333",
+                                     add_sig=False)
+        fig = viz.add_polar_visual_assists(fig)
+        fig.show(config={'displayModeBar': False})
+        fig.write_image(f"temp/{team}_polar_{yr_a}_{yr_b}.png")
+
+        crunch_df = shots_df[(np.abs(shots_df.away_score - shots_df.home_score) <= 8) & (shots_df.period >= 4) & (shots_df.team == team)]
+        grp_shots_df = dataproc.grp_polar_shots(crunch_df)
+        fig = viz.plot_polar_pps(grp_shots_df)
+        fig = viz.add_shotchart_note(fig,
+                                     f"<B>{team} - crunch time (score within 8 in 4Q+) shots by angle & distance</B><BR><BR>" +
+                                     "'" + yr_a + "/'" + yr_b + " season<BR>" +
+                                     "Size: Frequency<BR>Color: Points / 100 shots",
+                                     title_xloc=0.085, title_yloc=0.915, size=13, textcolor="#333333",
+                                     add_sig=False)
+        fig = viz.add_polar_visual_assists(fig)
+        fig.show(config={'displayModeBar': False})
+        fig.write_image(f"temp/{team}_crunchtime_polar_{yr_a}_{yr_b}.png")
 
     # # Show on/off offence graphs for players
     # for (team, player) in [("HOU", "Harden"), ("PHI", "Joel Embiid"), ("LAL", "LeBron James"), ("MIL", "Giannis")]:
