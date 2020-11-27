@@ -719,7 +719,7 @@ def get_rel_stats(rel_hexbin_stats, base_hexbin_stats, min_threshold):
     return rel_hexbin_stats
 
 
-def clip_hex_freq(input_freqs, max_freq=0.2):
+def clip_hex_freq(input_freqs, max_freq=0.002):
     freq_by_hex = np.array([min(max_freq, i) for i in input_freqs])
     return freq_by_hex
 
@@ -865,6 +865,121 @@ def plot_raw_shot_chart(shots_df, fig_width=800, mode="light"):
         ))
     fig.update_layout(showlegend=False)
 
+    return fig
+
+
+def format_polar_chart(fig, marker_cmax, marker_cmin):
+
+    paper_bgcolor = "wheat"
+    plot_bgcolor = "Cornsilk"
+    textcolor = "#333333"
+
+    fig.update_traces(marker=dict(line=dict(width=0.6, color=textcolor), symbol="square"))
+    fig.update_traces(marker=dict(cmax=marker_cmax, cmin=marker_cmin))
+    fig.update_layout(
+        margin=dict(l=20, r=20, t=20, b=20),
+        paper_bgcolor=paper_bgcolor,
+        plot_bgcolor=plot_bgcolor,
+        yaxis=dict(
+            scaleanchor="x",
+            scaleratio=1,
+            showgrid=True,
+            zeroline=True,
+            showline=True,
+            ticks='',
+            showticklabels=True,
+            fixedrange=True,
+            zerolinewidth=0.2,
+            zerolinecolor="#dddddd",
+            tickfont={"size": 11},
+            title_font={"size": 13},
+        ),
+        xaxis=dict(
+            showgrid=True,
+            zeroline=True,
+            showline=True,
+            ticks='',
+            showticklabels=True,
+            fixedrange=True,
+            zerolinewidth=0.2,
+            zerolinecolor="#dddddd",
+            tickfont={"size": 11},
+            title_font={"size": 13},
+        ),
+    )
+    ticktexts = [str(marker_cmin) + '-', "", str(marker_cmax) + '+']
+    fig.update_layout(coloraxis_colorbar=dict(
+        # thickness=15,
+        x=0.88,
+        y=0.83,
+        thickness=15,
+        yanchor='middle',
+        len=0.3,
+        tickvals=[marker_cmin, (marker_cmin + marker_cmax) / 2, marker_cmax],
+        ticktext=ticktexts,
+        titlefont=dict(size=12),
+        tickfont=dict(
+            size=12,
+            color=textcolor
+        )
+    ))
+    fig.update_layout(xaxis=dict(tickmode='linear', tick0=0, dtick=45))
+    return fig
+
+
+def plot_polar_pps(tmp_df, marker_cmin=65, marker_cmax=145, ref_size=5):
+
+    # marker avg should be about 105 for league avg pps
+
+    labels = {
+        "rel_pct": "Relative<BR>accuracy (%)", "pps": "PTS/100",
+        "tbin": "Shot Angle (degrees)", "rbin": "Shot Distance (ft)"
+    }
+
+    fig = px.scatter(tmp_df, x="tbin", y="rbin", size="freq_pct", color="pps",
+                     color_continuous_scale=px.colors.diverging.RdYlBu_r, template="plotly_white",
+                     range_x=[-105, 105], range_y=[-4, 40], range_color=[marker_cmin, marker_cmax],
+                     height=600, width=750, size_max=16, labels=labels, hover_data=["attempts"]
+                     )
+
+    # Scale markers to be a fixed size wrt percentages
+    tmp_sizes = fig['data'][0]['marker']['size']
+    scale_factor = (ref_size / np.max(tmp_df["freq_pct"]))
+    fig['data'][0]['marker']['size'] = tmp_sizes / scale_factor
+
+    fig = format_polar_chart(fig, marker_cmax=marker_cmax, marker_cmin=marker_cmin)
+    fig = add_jph_signature(fig, yloc=0.03)
+
+    return fig
+
+
+def add_polar_visual_assists(fig, three_line_col="orange", restricted_line_col="lightgray"):
+
+    # Add 3pt line
+    cnr_angle_min = -np.degrees(np.arctan(5.25 / 22))
+    cnr_angle_max = np.degrees(np.arccos(22 / 23.75))
+    t = np.linspace(cnr_angle_min, cnr_angle_max, 20)
+    r = [22 / np.cos(np.radians(i)) for i in t]
+
+    new_lines = list()
+    for i in range(len(t) - 1):
+        tmp_dict = dict(type="line", x0=90 - t[i], y0=r[i], x1=90 - t[i + 1], y1=r[i + 1],
+                        line=dict(color=three_line_col, width=1), layer='above')
+        new_lines.append(tmp_dict)  # Right side of graph / Left on court
+        tmp_dict = dict(type="line", x0=-90 + t[i], y0=r[i], x1=-90 + t[i + 1], y1=r[i + 1],
+                        line=dict(color=three_line_col, width=1), layer='above')
+        new_lines.append(tmp_dict)  # Left side of graph / Right on court
+    new_lines.append(
+        dict(type="line", x0=-90 + cnr_angle_max, y0=23.75, x1=90 - cnr_angle_max, y1=23.75,
+             line=dict(color=three_line_col, width=1), layer='above')
+    )
+
+    # Add restricted area line
+    new_lines.append(
+        dict(type="line", x0=-90, y0=4, x1=90, y1=4,
+             line=dict(color=restricted_line_col, width=1), layer='above')
+    )
+    fig.update_layout(shapes=new_lines)
     return fig
 
 
