@@ -525,6 +525,50 @@ def add_polar_columns(shots_df):
     return shots_df
 
 
+def add_polar_bins(shots_df, rbin_size=30, large_tbins=True):
+    # Group shots into buckets / bins
+    # One challenge is the pesky 3-point line - between 22 and 23.75 feet, some shots are threes and some aren't
+    # So let's make sure that no groups have 3s and 2s coexist.
+    # The 3pt arc meets the corner 3 line at 22.13 degrees
+
+    if large_tbins:
+        tbin_size = 27
+    else:
+        tbin_size = 9
+
+    shots_df = shots_df.assign(tbin=tbin_size * np.sign(shots_df.angle) * ((np.abs(shots_df.angle) + (tbin_size/2)) // tbin_size))
+    shots_df = shots_df.assign(rbin=0.1 * rbin_size * (0.5 + (np.abs(shots_df.shot_dist_calc) // rbin_size)))
+
+    # For the last bins of twos
+    shots_df.loc[(shots_df.shot_dist_calc >= 210) & (shots_df.is_three == False), "rbin"] = 22.5
+    shots_df.loc[(shots_df.shot_dist_calc >= 210) & (shots_df.angle < -67.5), "rbin"] = 19.5
+    shots_df.loc[(shots_df.shot_dist_calc >= 210) & (shots_df.angle > 67.5), "rbin"] = 19.5
+
+    # For bins of threes
+    shots_df.loc[shots_df.is_three == True, "rbin"] = 24 + 0.1 * rbin_size * (0.5 + (np.abs(shots_df.shot_dist_calc-240) // rbin_size))
+
+    # For corner threes:
+    if large_tbins:
+        shots_df.loc[((shots_df.is_three == True) & (shots_df.angle > 67.5)), "rbin"] = 23.5
+        shots_df.loc[((shots_df.is_three == True) & (shots_df.angle > 67.5)), "tbin"] = 81
+        shots_df.loc[((shots_df.is_three == True) & (shots_df.angle < -67.5)), "rbin"] = 23.5
+        shots_df.loc[((shots_df.is_three == True) & (shots_df.angle < -67.5)), "tbin"] = -81
+    else:
+        for temp_t in [67.5, 76.5, 85.5, 94.5]:
+            if temp_t == 67.5:
+                new_rbin = 24.5  # This is an awkward bin - between corner and the full length; so show it as such
+            else:
+                new_rbin = 23.5  # Corner 3
+            # Left corner
+            shots_df.loc[((shots_df.is_three == True) & (shots_df.angle > -temp_t-9) & (shots_df.angle < -temp_t)), "rbin"] = new_rbin
+            shots_df.loc[((shots_df.is_three == True) & (shots_df.angle > -temp_t-9) & (shots_df.angle < -temp_t)), "tbin"] = -temp_t-4.5
+
+            shots_df.loc[((shots_df.is_three == True) & (shots_df.angle > temp_t) & (shots_df.angle < temp_t+9)), "rbin"] = new_rbin
+            shots_df.loc[((shots_df.is_three == True) & (shots_df.angle > temp_t) & (shots_df.angle < temp_t+9)), "tbin"] = temp_t+4.5
+
+    return shots_df
+
+
 def grp_polar_shots(shots_df, tbin_smoothing_bins=1):
     """
     :param shots_df:
@@ -574,50 +618,6 @@ def grp_polar_shots(shots_df, tbin_smoothing_bins=1):
             grp_shots_df.loc[row.name, "attempts"] = 0
 
     return grp_shots_df
-
-
-def add_polar_bins(shots_df, rbin_size=30, large_tbins=True):
-    # Group shots into buckets / bins
-    # One challenge is the pesky 3-point line - between 22 and 23.75 feet, some shots are threes and some aren't
-    # So let's make sure that no groups have 3s and 2s coexist.
-    # The 3pt arc meets the corner 3 line at 22.13 degrees
-
-    if large_tbins:
-        tbin_size = 27
-    else:
-        tbin_size = 9
-
-    shots_df = shots_df.assign(tbin=tbin_size * np.sign(shots_df.angle) * ((np.abs(shots_df.angle) + (tbin_size/2)) // tbin_size))
-    shots_df = shots_df.assign(rbin=0.1 * rbin_size * (0.5 + (np.abs(shots_df.shot_dist_calc) // rbin_size)))
-
-    # For the last bins of twos
-    shots_df.loc[(shots_df.shot_dist_calc >= 210) & (shots_df.is_three == False), "rbin"] = 22.5
-    shots_df.loc[(shots_df.shot_dist_calc >= 210) & (shots_df.angle < -67.5), "rbin"] = 19.5
-    shots_df.loc[(shots_df.shot_dist_calc >= 210) & (shots_df.angle > 67.5), "rbin"] = 19.5
-
-    # For bins of threes
-    shots_df.loc[shots_df.is_three == True, "rbin"] = 24 + 0.1 * rbin_size * (0.5 + (np.abs(shots_df.shot_dist_calc-240) // rbin_size))
-
-    # For corner threes:
-    if large_tbins:
-        shots_df.loc[((shots_df.is_three == True) & (shots_df.angle > 67.5)), "rbin"] = 23.5
-        shots_df.loc[((shots_df.is_three == True) & (shots_df.angle > 67.5)), "tbin"] = 81
-        shots_df.loc[((shots_df.is_three == True) & (shots_df.angle < -67.5)), "rbin"] = 23.5
-        shots_df.loc[((shots_df.is_three == True) & (shots_df.angle < -67.5)), "tbin"] = -81
-    else:
-        for temp_t in [67.5, 76.5, 85.5, 94.5]:
-            if temp_t == 67.5:
-                new_rbin = 24.5  # This is an awkward bin - between corner and the full length; so show it as such
-            else:
-                new_rbin = 23.5  # Corner 3
-            # Left corner
-            shots_df.loc[((shots_df.is_three == True) & (shots_df.angle > -temp_t-9) & (shots_df.angle < -temp_t)), "rbin"] = new_rbin
-            shots_df.loc[((shots_df.is_three == True) & (shots_df.angle > -temp_t-9) & (shots_df.angle < -temp_t)), "tbin"] = -temp_t-4.5
-
-            shots_df.loc[((shots_df.is_three == True) & (shots_df.angle > temp_t) & (shots_df.angle < temp_t+9)), "rbin"] = new_rbin
-            shots_df.loc[((shots_df.is_three == True) & (shots_df.angle > temp_t) & (shots_df.angle < temp_t+9)), "tbin"] = temp_t+4.5
-
-    return shots_df
 
 
 # def main():

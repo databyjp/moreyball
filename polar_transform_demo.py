@@ -26,6 +26,7 @@ fig_width = 700
 fig = go.Figure()
 fig = viz.draw_plotly_court(fig, fig_width=fig_width, mode="light")
 fig.show(config={'displayModeBar': False})
+fig.write_image(f"temp/bball_court_cart.png")
 
 # Highlight areas around the rim & past the 3
 fig = go.Figure()
@@ -144,9 +145,9 @@ fig = format_chart(fig)
 # ==================== Show transformed court w/ lines ====================
 fig = go.Figure()
 
-three_line_col = "blue"
+three_line_col = "orange"
 main_line_col = "#333333"
-light_line_col = "LightGray"
+light_line_col = "#333333"
 paper_bgcolor = "wheat"
 plot_bgcolor = "Cornsilk"
 fig.update_layout(
@@ -242,10 +243,11 @@ for i in range(len(t)-1):
 # Add restricted area semicircle
 new_lines.append(
     dict(type="line", x0=-90, y0=4, x1=90, y1=4,
-         line=dict(color="orange", width=1), layer='above')
+         line=dict(color="lightgray", width=1), layer='above')
 )
 
 fig.update_layout(shapes=new_lines)
 
 fig = format_chart(fig, xrange=[-180, 180], yrange=[-2, 50], margins=0)
 fig.show(config={'displayModeBar': False})
+fig.write_image(f"temp/bball_court_polar.png")
